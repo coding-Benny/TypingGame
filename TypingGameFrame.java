@@ -11,13 +11,13 @@ class TypingGameFrame extends JFrame {
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		Container container = getContentPane();
 		container.setLayout(new BorderLayout());
-		container.setLayout(new BorderLayout());
 		container.add(makeToolBar(), BorderLayout.NORTH);
 		setJMenuBar(makeMenu());
 		setSize(800,600);
 		setResizable(false);
 		splitPane();
 		setVisible(true);
+		gamePanel.run();
 	}
 	
 	public JToolBar makeToolBar() {
