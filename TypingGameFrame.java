@@ -3,6 +3,7 @@ import javax.swing.*;
 
 class TypingGameFrame extends JFrame {
 	private TypingGamePanel gamePanel = new TypingGamePanel();
+	TypingGamePanel.JGameGroundPanel ground = gamePanel.new JGameGroundPanel();
 	private	ScorePanel scorePanel = new ScorePanel();
 	private EditPanel editPanel = new EditPanel();
 	
@@ -17,7 +18,7 @@ class TypingGameFrame extends JFrame {
 		setResizable(false);
 		splitPane();
 		setVisible(true);
-		gamePanel.run();
+		ground.startGame();
 	}
 	
 	public JToolBar makeToolBar() {
