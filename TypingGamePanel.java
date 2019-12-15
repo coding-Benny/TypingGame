@@ -2,152 +2,222 @@ import java.awt.*;
 import javax.swing.*;
 import java.awt.event.*;
 import java.io.*;
+import java.util.ArrayList;
 import java.util.Vector;
 
 class TypingGamePanel extends JPanel {
-	private JGameGroundPanel groundPanel = new JGameGroundPanel();
-	private JInputPanel inputPanel = new JInputPanel();
-	
-	public TypingGamePanel() {
+	private JGameGroundPanel groundPanel = new JGameGroundPanel(); // 단어 떨어지는 스크린
+	private JInputPanel inputPanel = new JInputPanel(); // 입력창에 입력하는 스크린
+	private String fallingWord = null;
+	private ArrayList<String> answerVector = new ArrayList<String>();
+
+	public TypingGamePanel() { // setLayout
 		setLayout(new BorderLayout());
 		add(groundPanel, BorderLayout.CENTER);
 		add(inputPanel, BorderLayout.SOUTH);
 	}
 
-	class JGameGroundPanel extends JPanel {
-		private JLabel label = new JLabel();
-		private JLabel resLabel = new JLabel();
+	class JGameGroundPanel extends JPanel { // 단어 떨어지는 스크린.
+	
+		private JLabel label = new JLabel(); // 단어
+		private JLabel resLabel = new JLabel(); // 단어 oX 판단레이블
 		private Words words = null;
-		private String fallingWord = null;
-		private FallingThread thread = null;
+		private FallingThread thread = null; // 레이블 떨어짐
+		private RandomThread randomThread = null;
 		private boolean gameOn = false;
-		
+
 		public JGameGroundPanel() {
+			// setBackground(Color.PINK);
 			setLayout(null);
-			add(label); // 화면에 표시 및 출력
-			
+			add(label);
 			resLabel.setLocation(0, 0);
 			resLabel.setSize(100, 30);
 			add(resLabel);
 			words = new Words("words.txt");
 		}
-		
+
 		public boolean isGameOn() {
 			return gameOn;
 		}
-		
+
 		public void stopGame() {
-			if(thread == null)
-				return; // 스레드가 없음 
+			if (thread == null)
+				return; // 스레드가 없음
 			thread.interrupt(); // 스레드 강제 종료
 			thread = null;
 			gameOn = false;
 		}
-		
-		public void stopSelfAndNewGame() { // 스레드가 바닥에 닿아서 실패할 때 호출
-			startGame();			
+
+		public void gameOver() {
+			inputPanel.tf.setEditable(false);
+			Component[] children = groundPanel.getComponents();
+			for (int i = 0; i < children.length; i++) {
+				groundPanel.remove(children[i]);
+				groundPanel.revalidate();
+				groundPanel.repaint();
+			}
+			thread= null;
+			//thread.interrupt();
+			randomThread = null;
+			//randomThread.interrupt();
+			// 다이얼로그 창에서 이름 입력 받아 파일에 이름과 점수 기록
 		}
-		
+
 		public void printResult(String text) {
 			resLabel.setText(text);
 		}
-		
+
 		public void startGame() {
-			fallingWord = words.getRandomWord();
-			int x = ((int)(Math.random() * this.getWidth()));
-			int y = ((int)(Math.random() * (this.getHeight()/3)));
-			label.setText(fallingWord);
-			label.setSize(200, 30);
-			label.setLocation(x, y);
-			label.setForeground(Color.MAGENTA);
-			label.setFont(new Font("Tahoma", Font.ITALIC, 20));
-			
-			thread = new FallingThread(this, label);
-			thread.start();
+			randomThread = new RandomThread();
+			randomThread.start();
 			gameOn = true;
 		}
-		
+
 		public boolean matchWord(String text) {
-			if(fallingWord != null && fallingWord.equals(text))
-				return true;
-			else
-				return false;
+			System.out.println(answerVector);
+			for (int i = 0; i < answerVector.size(); i++) {
+				System.out.println("vector size : " + answerVector.size());
+				if (answerVector.get(i).equals(text)) {
+					answerVector.remove(text);
+					System.out.println("vector size : " + answerVector.size());
+					System.out.println("text is answer");
+					return true;
+				}
+				
+			}
+			return false;
 		}
-		
+
+		class RandomThread extends Thread {
+			private JLabel newLabel; // 게임 숫자를 출력하는 레이블
+			private int generateCycle = 3000;
+			public void run() {
+				while (!Thread.interrupted()) {
+					try {
+						if (TimerRunnable.isFinished == true) {
+							gameOver();
+							this.interrupt();
+						}
+						if(TimerRunnable.remainedTime <= 100)
+							generateCycle = 2000;
+						else if(TimerRunnable.remainedTime <= 50)
+							generateCycle = 1500;
+						fallingWord = words.getRandomWord();
+						answerVector.add(fallingWord);
+						newLabel = new JLabel(fallingWord);
+						newLabel.setSize(180, 30);
+						newLabel.setOpaque(true);
+						newLabel.setBackground(Color.BLACK);
+						int x = ((int) (Math.random() * (groundPanel.getWidth() - newLabel.getWidth())));
+						int y = 5;
+						newLabel.setLocation(x, y);
+						newLabel.setForeground(Color.MAGENTA);
+						newLabel.setFont(new Font("Tahoma", Font.ITALIC, 20));
+						groundPanel.add(newLabel);
+
+						thread = new FallingThread(groundPanel, newLabel);
+						thread.start();
+
+						Thread.sleep(generateCycle);
+
+					} catch (InterruptedException e) {
+						System.out.println("random Exception");
+						return; // 스레드 종료
+					}
+				}
+			}
+		}
+
 		class FallingThread extends Thread {
 			private JGameGroundPanel panel;
-			private JLabel label; //게임 숫자를 출력하는 레이블
-			private long delay = 200; // 지연 시간의 초깃값 = 200
-			private boolean falling = false; // 떨이지고 있는지. 초깃값 = false
-			
+			private JLabel label; // 게임 숫자를 출력하는 레이블
+			private long fallingDelay = 300; // 지연 시간의 초깃값 = 200
+			private boolean falling = false; // 떨어지고 있는지. 초깃값 = false
+			private int fallingCount = 0; // 떨어진 횟수 세기
+
 			public FallingThread(JGameGroundPanel panel, JLabel label) {
 				this.panel = panel;
 				this.label = label;
 			}
-			
+
 			public boolean isFalling() {
-				return falling; 
-			}	
-			
+				return falling;
+			}
+					    
 			@Override
 			public void run() {
 				falling = true;
-				while(true) {
+				while (!Thread.interrupted()) {
 					try {
-						sleep(delay);
-						int y = label.getY() + 5; //5픽셀 씩 아래로 이동
-						if(y >= panel.getHeight()-label.getHeight()) {
+						sleep(fallingDelay);
+						if (TimerRunnable.isFinished == true)
+							gameOver();
+						if(TimerRunnable.remainedTime<=100)
+							fallingDelay = 150;
+						int y = label.getY() + 5; // 5픽셀 씩 아래로 이동
+						if (y >= panel.getHeight() - label.getHeight()) {// 바닥에 닿음
+							fallingCount++;
+							ScorePanel.correct = -1; // 점수 감점
+							ScorePanel.checkSuccess();
 							falling = false;
 							label.setText("");
 							groundPanel.printResult("시간초과실패");
-							groundPanel.stopSelfAndNewGame();
-							break; // 스레드 종료
+							if (fallingCount == 10)
+								gameOver();
+							this.interrupt(); // 스레드 종료
+						} else {
+							label.setLocation(label.getX(), y);
+							TypingGamePanel.this.repaint();
 						}
-						label.setLocation(label.getX(), y);
-						TypingGamePanel.this.repaint();
 					} catch (InterruptedException e) {
+						System.out.println("Exception working");
 						falling = false;
 						return; // 스레드 종료
 					}
 				}
-			}	
+			}
 		}
 	}
-		
 
 	class JInputPanel extends JPanel {
-
+		private JTextField tf;
 		public JInputPanel() {
 			setLayout(new FlowLayout());
-			JTextField tf = new JTextField(40);
+			tf = new JTextField(40); // 입력창
 			add(tf);
-
 			tf.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent e) {
 					JTextField t = (JTextField) e.getSource();
 					String answer = t.getText();
-					if(answer.equals("그만"))
+					if (answer.equals("그만"))
 						System.exit(0);
-					if(!groundPanel.isGameOn())
-						return;
-					
 					boolean match = groundPanel.matchWord(answer);
-					if(match == true) {
+					if (match == true) {
+						System.out.println(answer + "is in the answerVector");
+						setBackground(Color.GREEN);
+						ScorePanel.correct = 1;
+						ScorePanel.checkSuccess();
 						groundPanel.printResult("성공");
-						groundPanel.stopGame();
-						groundPanel.startGame();
+						Component[] children = groundPanel.getComponents();
+						for (int i = 0; i < children.length; i++) {
+							if (((JLabel) children[i]).getText().equals(answer)) {
+								groundPanel.remove(children[i]);
+								groundPanel.revalidate();
+							}
+						}
 						tf.setText("");
-					}
-					else {
+					} else {
+						setBackground(Color.RED);
+						ScorePanel.correct = -1;
+						ScorePanel.checkSuccess();
 						groundPanel.printResult(tf.getText() + " 틀림");
 						tf.setText("");
 					}
-				}	
+				}
 			});
 		}
 	}
 }
-
 
 //words.txt 파일을 읽고 벡터에 저장하고 벡터로부터 랜덤하게 단어를 추출하는 클래스
 class Words {
