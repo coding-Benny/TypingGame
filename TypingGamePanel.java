@@ -138,8 +138,6 @@ class TypingGamePanel extends JPanel {
 						answerVector.add(fallingWord);
 						newLabel = new JLabel(fallingWord);
 						newLabel.setSize(180, 30);
-						newLabel.setOpaque(true);
-						newLabel.setBackground(Color.BLACK);
 						int x = ((int) (Math.random() * (groundPanel.getWidth() - newLabel.getWidth())));
 						int y = 5;
 						newLabel.setLocation(x, y);
