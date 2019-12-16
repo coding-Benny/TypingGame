@@ -2,7 +2,9 @@ import java.awt.*;
 import javax.swing.*;
 import java.awt.event.*;
 import java.io.*;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Vector;
 
 class TypingGamePanel extends JPanel {
@@ -27,7 +29,6 @@ class TypingGamePanel extends JPanel {
 		private boolean gameOn = false;
 
 		public JGameGroundPanel() {
-			// setBackground(Color.PINK);
 			setLayout(null);
 			add(label);
 			resLabel.setLocation(0, 0);
@@ -47,7 +48,22 @@ class TypingGamePanel extends JPanel {
 			thread = null;
 			gameOn = false;
 		}
-
+		public void writeRecords(String name, int score) {
+			try {
+				String recordPath = "records.txt";
+				File recordFile = new File(recordPath);
+				FileWriter fileWriter = new FileWriter(recordFile, true);
+				BufferedWriter bufferFileWriter = new BufferedWriter(fileWriter);
+				Date currentTime = new Date();
+				SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+				fileWriter.append("Player : " + name + "\n");
+				fileWriter.append("Score : " + Integer.toString(score) + "\n");
+				fileWriter.append("Date : " + formatter.format(currentTime) + "\n");
+				fileWriter.append("---------------------------------------\n");
+				bufferFileWriter.close();
+				System.out.println("records Completed");
+			} catch(Exception e) { System.out.println("record error"); }
+		}
 		public void gameOver() {
 			inputPanel.tf.setEditable(false);
 			Component[] children = groundPanel.getComponents();
@@ -61,6 +77,18 @@ class TypingGamePanel extends JPanel {
 			randomThread = null;
 			//randomThread.interrupt();
 			// 다이얼로그 창에서 이름 입력 받아 파일에 이름과 점수 기록
+			String name = (String) JOptionPane.showInputDialog(this, "Write your name", "Save your record", JOptionPane.PLAIN_MESSAGE);
+			//String name = (String) JOptionPane.showInputDialog(null, "input your name");
+			System.out.println("user name : " + name);
+			if(name != null) {
+				JOptionPane.showMessageDialog(null, "Successfully saved your record, " + name);
+				writeRecords(name, ScorePanel.score);
+				return;
+			}
+			else {
+				// 다이얼로그 창 닫기
+				System.exit(0);
+			}
 		}
 
 		public void printResult(String text) {
@@ -98,10 +126,14 @@ class TypingGamePanel extends JPanel {
 							gameOver();
 							this.interrupt();
 						}
-						if(TimerRunnable.remainedTime <= 100)
+						if(TimerRunnable.remainedTime > 50 && TimerRunnable.remainedTime <= 100) {
 							generateCycle = 2000;
-						else if(TimerRunnable.remainedTime <= 50)
+							TimerRunnable.level=2;
+						}
+						else if(TimerRunnable.remainedTime <= 50) {
 							generateCycle = 1500;
+							TimerRunnable.level=3;
+						}
 						fallingWord = words.getRandomWord();
 						answerVector.add(fallingWord);
 						newLabel = new JLabel(fallingWord);
@@ -157,12 +189,13 @@ class TypingGamePanel extends JPanel {
 						int y = label.getY() + 5; // 5픽셀 씩 아래로 이동
 						if (y >= panel.getHeight() - label.getHeight()) {// 바닥에 닿음
 							fallingCount++;
+							TimerRunnable.life--;
 							ScorePanel.correct = -1; // 점수 감점
 							ScorePanel.checkSuccess();
 							falling = false;
 							label.setText("");
 							groundPanel.printResult("시간초과실패");
-							if (fallingCount == 10)
+							if (TimerRunnable.life < 0)
 								gameOver();
 							this.interrupt(); // 스레드 종료
 						} else {
