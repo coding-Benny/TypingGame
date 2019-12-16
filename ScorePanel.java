@@ -7,16 +7,26 @@ class TimerRunnable implements Runnable {
 	TypingGamePanel.JGameGroundPanel ground = gamePanel.new JGameGroundPanel();
 	public static boolean isFinished = false;
 	public static int remainedTime = 0;
+	public static int level = 0;
+	public static int life = 0;
 	private JLabel timerLabel;
+	private JLabel levelLabel;
+	private JLabel lifeLabel;
 	
-	public TimerRunnable(JLabel timerLabel) {
+	public TimerRunnable(JLabel timerLabel, JLabel levelLabel, JLabel lifeLabel) {
 		this.timerLabel = timerLabel;
+		this.levelLabel = levelLabel;
+		this.lifeLabel = lifeLabel;
 	}
 	@Override
 	public void run() {
-		remainedTime=30;
-		while(remainedTime>=0 && !Thread.interrupted()) {
+		remainedTime = 150;
+		level = 1;
+		life = 10;
+		while(remainedTime >= 0 && !Thread.interrupted()) {
 			timerLabel.setText(Integer.toString(remainedTime));
+			levelLabel.setText(Integer.toString(level));
+			lifeLabel.setText(Integer.toString(life));
 			remainedTime--;
 			try {
 				Thread.sleep(1000);
@@ -24,7 +34,7 @@ class TimerRunnable implements Runnable {
 				return;
 			}
 		}
-		isFinished=true;	
+		isFinished=true;
 	}
 }
 
@@ -37,6 +47,11 @@ public class ScorePanel extends JPanel {
 	private Thread th;
 	private JLabel timeInfoLabel = new JLabel("Remaining Time");
 	private JLabel timerLabel = new JLabel();
+	private JLabel levelInfoLabel = new JLabel("LEVEL ");
+	private JLabel levelLabel = new JLabel();
+	private JLabel lifeInfoLabel = new JLabel("Life ");
+	private JLabel lifeLabel = new JLabel();
+	
 	
 	static public void checkSuccess() { //맞췄을 때 점수 바뀌기
 		if(ScorePanel.correct==1) {
@@ -81,7 +96,27 @@ public class ScorePanel extends JPanel {
 		timerLabel.setFont(new Font("Gothic", Font.ITALIC, 50));
 		timerLabel.setLocation(170, 50);
 		
-		TimerRunnable runnable = new TimerRunnable(timerLabel);
+		levelInfoLabel.setSize(100, 70);
+		levelInfoLabel.setFont(new Font("Gothic", Font.ITALIC, 20));
+		levelInfoLabel.setLocation(10, 120);
+		add(levelInfoLabel);
+		
+		levelLabel.setSize(100, 50);
+		levelLabel.setFont(new Font("Gothic", Font.ITALIC, 30));
+		levelLabel.setLocation(100, 120);
+		add(levelLabel);
+		
+		lifeInfoLabel.setSize(100, 50);;
+		lifeInfoLabel.setFont(new Font("Gothic", Font.ITALIC, 30));
+		lifeInfoLabel.setLocation(10, 200);
+		add(lifeInfoLabel);
+		
+		lifeLabel.setSize(100, 30);
+		lifeLabel.setFont(new Font("Gothic", Font.PLAIN, 30));
+		lifeLabel.setLocation(100, 200);
+		add(lifeLabel);
+		
+		TimerRunnable runnable = new TimerRunnable(timerLabel, levelLabel, lifeLabel);
 		th = new Thread(runnable);
 		add(timerLabel);
 		th.start();
